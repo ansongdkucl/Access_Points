@@ -30,16 +30,18 @@ for ip in device_ip:
     lldp = device.get_lldp_neighbors_detail()
 
     # Retrieve the interfaces and their IP addresses
-    interfaces_ip = device.get_interfaces_ip()
+    interfaces = device.get_interfaces()
 
     # Filter the LLDP information based on the remote system name
     filtered_lldp = []
     for interface, neighbors in lldp.items():
         for neighbor in neighbors:
             if 'AP' in neighbor.get('remote_system_name', ''):
-                # Get the VLAN ID from the interface name
-                vlan_id = interface.split('.')[1] if '.' in interface else ''
+                # Get the VLAN ID from the interface information
+                interface_info = interfaces.get(interface, {})
+                vlan_id = interface_info.get('vlan_id', '')
                 # Get the IP address of the local interface
+                interfaces_ip = device.get_interfaces_ip()
                 local_ip = next(iter(interfaces_ip.get(interface, {}).values()), '')
                 filtered_lldp.append((hostname, interface, vlan_id, neighbor.get('remote_system_name', ''), neighbor.get('remote_chassis_id', ''), neighbor.get('remote_port', ''), neighbor.get('remote_port_description', ''), neighbor.get('remote_system_description', ''), local_ip))
 
@@ -57,8 +59,3 @@ for neighbor in lldp_info_sorted:
     print(f'{neighbor[0]} {neighbor[1]} {neighbor[2]} {neighbor[3]} {neighbor[4]} {neighbor[5]} {neighbor[6]} {neighbor[7]} {neighbor[8]}')
 
 # Write the output to a CSV file
-with open('output.csv', 'w', newline='') as csvfile:
-    writer = csv.writer(csvfile)
-    writer.writerow(['Hostname', 'Local Interface', 'VLAN ID', 'Remote System Name', 'Remote Chassis ID', 'Remote Port', 'Remote Port Description', 'Remote System Description', 'Local IP'])
-    for neighbor in lldp_info_sorted:
-        writer.writerow([neighbor[0], neighbor[1], neighbor[2], neighbor[3], neighbor[4], neighbor[5], neighbor[6], neighbor[7], neighbor[8]])
